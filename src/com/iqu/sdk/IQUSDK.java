@@ -146,7 +146,7 @@ public class IQUSDK {
   /**
    * SDK version.
    */
-  public final static String SDK_VERSION = "1.0.1";
+  public final static String SDK_VERSION = "1.0.2";
 
   //
   // PROTECTED CONSTS
@@ -275,11 +275,6 @@ public class IQUSDK {
   private boolean m_updateThreadBusy;
 
   /**
-   * When true update() should sleep and recheck this value.
-   */
-  private boolean m_updateThreadWait;
-
-  /**
    * Thread used to call update()
    */
   private Thread m_updateThread;
@@ -354,6 +349,11 @@ public class IQUSDK {
    */
   private final Object m_idsSemaphore;
 
+  /**
+   * Used to handle access to m_pauseUpdateThread
+   */
+  private final Object m_updateThreadVariableSemaphore;
+
   //
   // PRIVATE CONSTRUCTOR
   //
@@ -371,6 +371,7 @@ public class IQUSDK {
     this.m_firstUpdateCall = true;
     this.m_heartbeatTime = -HEARTBEAT_INTERVAL;
     this.m_ids = new IQUIds();
+    this.m_idsSemaphore = new Object();
     this.m_initialized = false;
     this.m_localStorage = null;
     this.m_log = "";
@@ -381,7 +382,6 @@ public class IQUSDK {
     this.m_propertySemaphore = new Object();
     this.m_pendingMessagesSemaphore = new Object();
     this.m_logSemaphore = new Object();
-    this.m_idsSemaphore = new Object();
     this.m_sendingMessages = null;
     this.m_sendTimeout = DEFAULT_SEND_TIMEOUT;
     this.m_serverAvailable = true;
@@ -391,7 +391,7 @@ public class IQUSDK {
     this.m_updateThreadBusy = false;
     this.m_updateThreadPaused = false;
     this.m_updateThreadRunning = true;
-    this.m_updateThreadWait = false;
+    this.m_updateThreadVariableSemaphore = new Object();
   }
 
   //
@@ -507,7 +507,9 @@ public class IQUSDK {
    * Call this method from Activity's onResume; it resumes the update thread.
    */
   public void resume() {
-    this.m_updateThreadPaused = false;
+    synchronized(this.m_updateThreadVariableSemaphore) {
+      this.m_updateThreadPaused = false;
+    }
   }
 
   /**
@@ -1492,18 +1494,26 @@ public class IQUSDK {
         if (IQUSDK.DEBUG) {
           IQUSDK.this.addLog("[Thread] update thread started");
         }
-        while (IQUSDK.this.m_updateThreadRunning) {
+        boolean running = true;
+        while (running) {
           try {
             // call update
             IQUSDK.this.update();
+            // update running state
+            synchronized (IQUSDK.this.m_updateThreadVariableSemaphore) {
+              running = IQUSDK.this.m_updateThreadRunning;
+            }
             // update might have changed the running variable
-            if (IQUSDK.this.m_updateThreadRunning) {
+            if (running) {
               synchronized (this) {
                 this.wait(IQUSDK.this.getUpdateInterval());
               }
             }
           }
           catch (Exception ignored) {
+          }
+          synchronized (IQUSDK.this.m_updateThreadVariableSemaphore) {
+            running = IQUSDK.this.m_updateThreadRunning;
           }
         }
         if (IQUSDK.DEBUG) {
@@ -1519,22 +1529,13 @@ public class IQUSDK {
    * update thread to finish.
    */
   private void pauseUpdateThread() {
-    // prevent update from doing anything (when update call starts while
-    // processing this code)
-    this.m_updateThreadWait = true;
-    try {
-      // application is paused now (any call to update will return
-      // immediately)
+    // application is paused now (any call to update will return immediately)
+    synchronized(IQUSDK.this.m_updateThreadVariableSemaphore) {
       this.m_updateThreadPaused = true;
-      // cancel any IO being executed
-      if (this.m_network != null) {
-        this.m_network.cancelSend();
-      }
     }
-    finally {
-      // unblock update, if it was waiting it will exit immediately
-      // because of m_threadPaused
-      this.m_updateThreadWait = false;
+    // cancel any IO being executed
+    if (this.m_network != null) {
+      this.m_network.cancelSend();
     }
     // wait for update thread to finish current update call
     this.waitForUpdateThread();
@@ -1547,11 +1548,12 @@ public class IQUSDK {
   private void destroyUpdateThread() {
     // stop update thread (if one is active)
     if (this.m_updateThread != null) {
-      if (!this.m_updateThreadPaused) {
-        this.pauseUpdateThread();
-      }
+      // pause the update thread
+      this.pauseUpdateThread();
       // stop running the thread
-      this.m_updateThreadRunning = false;
+      synchronized (this.m_updateThreadVariableSemaphore) {
+        this.m_updateThreadRunning = false;
+      }
       // notify update thread (in case it is waiting)
       synchronized (this.m_updateThread) {
         this.m_updateThread.notify();
@@ -1571,11 +1573,17 @@ public class IQUSDK {
    * Waits for the update thread to finish to current update call.
    */
   private void waitForUpdateThread() {
-    while (this.m_updateThreadBusy) {
-      try {
-        Thread.sleep(10);
+    boolean busy = true;
+    while (busy) {
+      synchronized (this.m_updateThreadVariableSemaphore) {
+        busy = this.m_updateThreadBusy;
       }
-      catch (Exception ignored) {
+      if (busy) {
+        try {
+          Thread.sleep(10);
+        }
+        catch (Exception ignored) {
+        }
       }
     }
   }
@@ -1584,20 +1592,14 @@ public class IQUSDK {
    * Updates IQU SDK, this method is called from a separate thread context.
    */
   private void update() {
-    // need to wait?
-    while (this.m_updateThreadWait) {
-      try {
-        Thread.sleep(10);
+    synchronized (this.m_updateThreadVariableSemaphore) {
+      // exit if paused
+      if (this.m_updateThreadPaused) {
+        return;
       }
-      catch (Exception ignored) {
-      }
+      // busy now
+      this.m_updateThreadBusy = true;
     }
-    // exit if paused
-    if (this.m_updateThreadPaused) {
-      return;
-    }
-    // busy now
-    this.m_updateThreadBusy = true;
     // make sure m_updateThreadBusy gets reset to false
     try {
       // first time?
@@ -1611,8 +1613,10 @@ public class IQUSDK {
       this.processPendingMessages();
     }
     finally {
-      // update is no longer busy
-      this.m_updateThreadBusy = false;
+      synchronized (this.m_updateThreadVariableSemaphore) {
+        // update is no longer busy
+        this.m_updateThreadBusy = false;
+      }
     }
   }
 
