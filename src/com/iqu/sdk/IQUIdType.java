@@ -71,7 +71,7 @@ public enum IQUIdType {
      * @param aValue
      *            integer source value
      */
-    private IQUIdType(int aValue) {
+    IQUIdType(int aValue) {
         this.m_value = aValue;
     }
 

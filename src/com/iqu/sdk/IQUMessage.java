@@ -11,6 +11,7 @@ import org.json.JSONObject;
  * A message consists of an event and several ids. The event will not change,
  * the ids might change before the message is sent.
  */
+@SuppressWarnings("unused")
 class IQUMessage {
     //
     // PRIVATE VARIABLES

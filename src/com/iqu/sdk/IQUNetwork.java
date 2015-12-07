@@ -15,6 +15,7 @@ import org.json.JSONObject;
 /**
  * IQUNetwork takes care of sending data to the IQU server.
  */
+@SuppressWarnings("unused")
 class IQUNetwork {
     //
     // PROTECTED CONSTS
@@ -133,10 +134,8 @@ class IQUNetwork {
     @SuppressLint("DefaultLocale")
     protected boolean send(IQUMessageQueue aMessages) {
         JSONObject result = this.sendSigned(this.m_serviceUrl, aMessages.toJSONString());
-        if (result.has(ERROR)) {
-            return false;
-        }
-        return result.optString("status", "failed").toLowerCase().equals("ok");
+        return !result.has(ERROR)
+          && result.optString("status", "failed").toLowerCase().equals("ok");
     }
 
     /**
@@ -230,13 +229,14 @@ class IQUNetwork {
      * 
      * @return input stream as text or null if an IOException occurred.
      */
+    @SuppressWarnings("ReturnInsideFinallyBlock")
     private String streamToString(InputStream anInputStream) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(anInputStream));
         StringBuilder builder = new StringBuilder();
-        String line = null;
+        String line;
         try {
             while ((line = reader.readLine()) != null) {
-                builder.append(line + "\n");
+                builder.append(line).append("\n");
             }
         } catch (IOException e) {
             return null;
@@ -265,13 +265,20 @@ class IQUNetwork {
             // create HMAC hash and return its hexadecimal representation
             Mac hmac;
             hmac = Mac.getInstance("HmacSHA512");
-            SecretKeySpec secretKey = new SecretKeySpec(this.getBytes(aSecret), "HmacSHA512");
+            byte[] secret = this.getBytes(aSecret);
+            if (secret == null) {
+              return "";
+            }
+            SecretKeySpec secretKey = new SecretKeySpec(secret, "HmacSHA512");
             hmac.init(secretKey);
             return this.bytesToHex(hmac.doFinal(this.getBytes(aPostContent)));
         } catch (Exception error) {
             if (IQUSDK.DEBUG) {
-                IQUSDK.instance().addLog("[Network] error generating mac: " + error.getClass().getName()
-                        + ": " + error.getMessage());
+                IQUSDK.instance().addLog(
+                  "[Network] error generating mac: "
+                    + error.getClass().getName()
+                    + ": " + error.getMessage()
+                );
             }
         }
         return "";
@@ -280,6 +287,7 @@ class IQUNetwork {
     /**
      * Sleep for 1 second, unless IO got cancelled.
      */
+    @SuppressWarnings("EmptyCatchBlock")
     private void sleepThread() {
         try {
             // sleep 1000ms (unless cancel is activated)
@@ -327,7 +335,7 @@ class IQUNetwork {
      *            URL to post to
      * @param aPostContent
      *            Content to post
-     * @return
+     * @return JSONObject instance with simulated result data.
      */
     private JSONObject simulateServer(String anUrl, String aPostContent) {
         if (IQUSDK.DEBUG) {
@@ -406,6 +414,7 @@ class IQUNetwork {
      *             An exception is thrown if the sending of data failed in some
      *             way.
      */
+    @SuppressWarnings("UnusedAssignment")
     private void sendData(HttpURLConnection aConnection) throws Exception {
         // create structure shared between send thread and this thread
         final SendInformation information = new SendInformation();
@@ -472,7 +481,7 @@ class IQUNetwork {
         // get response
         int code = aConnection.getResponseCode();
         // result to return
-        JSONObject result = null;
+        JSONObject result;
         // replace 100 with 200
         if (code == 100) {
             code = 200;
@@ -542,7 +551,7 @@ class IQUNetwork {
      * 
      * @return JSONObject instance with result returned from server.
      */
-    @SuppressWarnings("incomplete-switch")
+    @SuppressWarnings({"incomplete-switch", "EmptyCatchBlock"})
     private JSONObject send(String anUrl, String aPostContent) {
         // debug
         if (IQUSDK.DEBUG) {

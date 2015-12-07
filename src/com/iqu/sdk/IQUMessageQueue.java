@@ -360,6 +360,7 @@ class IQUMessageQueue {
      * @param aMessage
      *            Message with changed content
      */
+    @SuppressWarnings("UnusedParameters")
     protected void onMessageChanged(IQUMessage aMessage) {
         this.m_dirtyJSON = true;
         this.m_dirtyStored = true;

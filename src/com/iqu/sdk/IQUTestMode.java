@@ -38,7 +38,7 @@ public enum IQUTestMode {
      * @param aValue
      *            integer test mode value
      */
-    private IQUTestMode(int aValue) {
+    IQUTestMode(int aValue) {
         this.m_value = aValue;
     }
 

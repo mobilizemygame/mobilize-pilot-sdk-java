@@ -31,13 +31,16 @@ The *doc/* folder contains html help files generated from the source.
 4. Add additional Ids via `IQUSDK.instance().setFacebookId()`, `IQUSDK.instance().setGooglePlusId()`, `IQUSDK.instance().setTwitterId()` or `IQUSDK.instance().setCustomId()`.
 5. Start calling analytic tracking methods to send messages to the server.
 6. Update the `payable` property to indicate the player is busy with a payable action.
-7. The IQU SDK needs to be notified when the application is minimized to the background, is activated from the background or is getting destroyed. Call `IQUSDK.instance().pause()` from within the `Activity.onPause()` method and `IQUSDK.instance().resume()` from the `Activity.onResume()` method. Call `IQUSDK.instance().destroy()` from within the `Activity.onDestroy()` method.
+7. The IQU SDK needs to be notified when the application is minimized to the background, is activated from the background. Call `IQUSDK.instance().pause()` from within the `Activity.onPause()` method and `IQUSDK.instance().resume()` from the `Activity.onResume()` method. 
+8. To stop the update thread and release references and resources call `IQUSDK.instance.terminate()`; after this call the SDK reverts back to an uninitialized state. The `IQUSDK.instance()` method will return a new instance and one of the start methods has to be called again to start the SDK.
 
 ## Network communication
 
 The IQU SDK uses a separate thread to send messages to the server (to prevent blocking the main thread). This means that there might be a small delay before messages are actually sent to the server. The maximum delay is determined by the `updateInterval` property.
 
 If the SDK fails to send a message to the IQU server, messages are queued and are sent when the server is available again. The queued messages are stored in persistent storage so they still can be resent after an application restart.
+
+While the IQU SDK is paused (because of a call to `IQUSDK.instance().pause()`) no messages are sent. Messages created by one of the `trackXXXXX` methods are placed in the internal message queue but will only be sent once `IQUSDK.instance().resume()` is called.
 
 ## Ids
 
