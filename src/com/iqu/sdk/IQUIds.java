@@ -165,6 +165,8 @@ class IQUIds {
      * 
      * @return IQUIds instance containing the same ids.
      */
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException",
+      "CloneDoesntCallSuperClone"})
     protected IQUIds clone() {
         return new IQUIds(this);
     }
@@ -184,7 +186,7 @@ class IQUIds {
                     json.put(this.getJSONName(type), value);
                 }
             }
-        } catch (Exception error) {
+        } catch (Exception ignore) {
         }
         return json.toString();
     }

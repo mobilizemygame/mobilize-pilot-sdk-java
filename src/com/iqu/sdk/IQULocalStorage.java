@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 /**
  * IQULocalStorage encapsulates a local storage specific to the SDK target. 
  */
+@SuppressWarnings("unused")
 class IQULocalStorage {
     //
     // PRIVATE VARS
