@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.json.JSONObject;
@@ -56,7 +58,7 @@ class IQUNetwork {
         /**
          * Connection to send data
          */
-        public HttpURLConnection connection;
+        public HttpsURLConnection connection;
 
         /**
          * Indicates if sending finished (successful or not)
@@ -356,17 +358,24 @@ class IQUNetwork {
     }
 
     /**
-     * Creates a HttpURLConnection instance from url.
+     * Creates a HttpsURLConnection instance from url.
      * 
      * @param anUrl
      *            URL to use
      * 
-     * @return HttpURLConnection instance
+     * @return HttpsURLConnection instance
      */
-    private HttpURLConnection createConnection(String anUrl) throws Exception {
+    @SuppressLint("TrulyRandom")
+	private HttpsURLConnection createConnection(String anUrl) throws Exception {
         // get URL and connection
         URL url = new URL(anUrl);
-        return (HttpURLConnection) url.openConnection();
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+     // Create the SSL connection
+        SSLContext sc;
+        sc = SSLContext.getInstance("TLS");
+        sc.init(null, null, new java.security.SecureRandom());
+        conn.setSSLSocketFactory(sc.getSocketFactory());
+        return conn;
     }
 
     /**
@@ -383,7 +392,7 @@ class IQUNetwork {
      *             An exception is thrown if an error occurred while
      *             initializing the instance.
      */
-    private void initConnection(HttpURLConnection aConnection, String aPostContent)
+    private void initConnection(HttpsURLConnection aConnection, String aPostContent)
             throws Exception {
         // initialize connection
         aConnection.setDoInput(true);
@@ -415,7 +424,7 @@ class IQUNetwork {
      *             way.
      */
     @SuppressWarnings("UnusedAssignment")
-    private void sendData(HttpURLConnection aConnection) throws Exception {
+    private void sendData(HttpsURLConnection aConnection) throws Exception {
         // create structure shared between send thread and this thread
         final SendInformation information = new SendInformation();
         information.connection = aConnection;
@@ -477,7 +486,7 @@ class IQUNetwork {
      *             An exception can be thrown while obtaining response
      *             information.
      */
-    private JSONObject processResponse(HttpURLConnection aConnection) throws Exception {
+    private JSONObject processResponse(HttpsURLConnection aConnection) throws Exception {
         // get response
         int code = aConnection.getResponseCode();
         // result to return
@@ -573,7 +582,7 @@ class IQUNetwork {
         JSONObject result = null;
         try {
             // create connection
-            HttpURLConnection connection = this.createConnection(anUrl);
+            HttpsURLConnection connection = this.createConnection(anUrl);
             try {
                 // initialize connection
                 this.initConnection(connection, aPostContent);
