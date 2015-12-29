@@ -34,6 +34,40 @@ The *doc/* folder contains html help files generated from the source.
 7. The IQU SDK needs to be notified when the application is minimized to the background, is activated from the background. Call `IQUSDK.instance().pause()` from within the `Activity.onPause()` method and `IQUSDK.instance().resume()` from the `Activity.onResume()` method. 
 8. To stop the update thread and release references and resources call `IQUSDK.instance.terminate()`; after this call the SDK reverts back to an uninitialized state. The `IQUSDK.instance()` method will return a new instance and one of the start methods has to be called again to start the SDK.
 
+
+## Examples
+
+For the for the following examples you need to get the `api key` and `secret key` from https://pilot.mobilizemygame.com.
+
+### Basic implementation
+
+The basic implementation will ensure to track the minimum possible amount of events, just put the following code into your MainActivity part of your application.
+
+```java
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    String apiKey = "your-pilot-api-key";
+    String secretKey = "your-pilot-secret-key";
+    IQUSDK.instance().start(getApplication(), apiKey, secretKey);
+}
+
+@Override
+public void onPause() {
+    super.onPause();
+    // avoid sending heartbeat events while the app is running in background
+    IQUSDK.instance().pause();
+}
+
+@Override
+public void onResume() {
+    super.onResume();
+    // restart sending heartbeat events as soon as the app comes back into foreground
+    IQUSDK.instance().resume();
+}
+```
+
 ## Network communication
 
 The IQU SDK uses a separate thread to send messages to the server (to prevent blocking the main thread). This means that there might be a small delay before messages are actually sent to the server. The maximum delay is determined by the `updateInterval` property.
