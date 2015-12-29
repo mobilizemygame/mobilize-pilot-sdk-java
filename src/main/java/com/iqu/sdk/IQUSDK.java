@@ -13,6 +13,7 @@ import android.view.WindowManager;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import org.json.JSONException;
@@ -146,7 +147,7 @@ public class IQUSDK {
   /**
    * SDK version.
    */
-  public final static String SDK_VERSION = "1.0.2";
+  public final static String SDK_VERSION = "1.0.3";
 
   //
   // PROTECTED CONSTS
@@ -368,6 +369,7 @@ public class IQUSDK {
     this.m_checkServerInterval = DEFAULT_CHECK_SERVER_INTERVAL;
     this.m_checkServerTime = -DEFAULT_CHECK_SERVER_INTERVAL;
     this.m_dateFormat = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss");
+    this.m_dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     this.m_firstUpdateCall = true;
     this.m_heartbeatTime = -HEARTBEAT_INTERVAL;
     this.m_ids = new IQUIds();
@@ -642,7 +644,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_REVENUE, true);
+      JSONObject event = this.createEvent(EVENT_REVENUE);
       event.put("amount", anAmount);
       event.put("currency", aCurrency);
       if (aReward != null) {
@@ -695,7 +697,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_REVENUE, true);
+      JSONObject event = this.createEvent(EVENT_REVENUE);
       event.put("amount", anAmount);
       event.put("currency", aCurrency);
       event.put("vc_amount", aVirtualCurrencyAmount);
@@ -744,7 +746,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_ITEM_PURCHASE, true);
+      JSONObject event = this.createEvent(EVENT_ITEM_PURCHASE);
       event.put("name", aName);
       this.addEvent(event);
     }
@@ -770,7 +772,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_ITEM_PURCHASE, true);
+      JSONObject event = this.createEvent(EVENT_ITEM_PURCHASE);
       event.put("name", aName);
       event.put("vc_amount", aVirtualCurrencyAmount);
       this.addEvent(event);
@@ -795,7 +797,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_TUTORIAL, true);
+      JSONObject event = this.createEvent(EVENT_TUTORIAL);
       event.put("step", aStep);
       this.addEvent(event);
     }
@@ -822,7 +824,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_MILESTONE, true);
+      JSONObject event = this.createEvent(EVENT_MILESTONE);
       event.put("name", aName);
       event.put("value", aValue);
       this.addEvent(event);
@@ -857,7 +859,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_MARKETING, false);
+      JSONObject event = this.createEvent(EVENT_MARKETING);
       this.putField(event, "partner", aPartner);
       this.putField(event, "campaign", aPartner);
       this.putField(event, "ad", aPartner);
@@ -887,7 +889,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_USER_ATTRIBUTE, false);
+      JSONObject event = this.createEvent(EVENT_USER_ATTRIBUTE);
       event.put("name", aName);
       event.put("value", aValue);
       this.addEvent(event);
@@ -912,7 +914,7 @@ public class IQUSDK {
       return;
     }
     try {
-      JSONObject event = this.createEvent(EVENT_COUNTRY, false);
+      JSONObject event = this.createEvent(EVENT_COUNTRY);
       event.put("value", aCountry);
       this.addEvent(event);
     }
@@ -1768,18 +1770,14 @@ public class IQUSDK {
    *
    * @param anEventType
    *   Type to use
-   * @param anAddTimestamp
-   *   When <code>true</code> add "timestamp" field.
    *
    * @return JSONObject instance containing event
    */
-  private JSONObject createEvent(String anEventType, boolean anAddTimestamp) {
+  private JSONObject createEvent(String anEventType) {
     JSONObject result = new JSONObject();
     try {
       result.put("type", anEventType);
-      if (anAddTimestamp) {
-        result.put("timestamp", this.m_dateFormat.format(new Date()));
-      }
+      result.put("timestamp", this.m_dateFormat.format(new Date()));
     }
     catch (Exception ignored) {
     }
@@ -1800,7 +1798,7 @@ public class IQUSDK {
   private void trackHeartbeat(IQUMessageQueue aMessages) {
     long currentTime = System.currentTimeMillis();
     if (currentTime > this.m_heartbeatTime + HEARTBEAT_INTERVAL) {
-      JSONObject event = this.createEvent(EVENT_HEARTBEAT, true);
+      JSONObject event = this.createEvent(EVENT_HEARTBEAT);
       try {
         event.put("is_payable", this.m_payable);
       }
@@ -1818,7 +1816,7 @@ public class IQUSDK {
    */
   private void trackPlatform() {
     try {
-      JSONObject event = this.createEvent(EVENT_PLATFORM, false);
+      JSONObject event = this.createEvent(EVENT_PLATFORM);
       this.putField(event, "manufacturer", Build.MANUFACTURER);
       this.putField(event, "device_brand", Build.BRAND);
       this.putField(event, "device_model", Build.MODEL);
