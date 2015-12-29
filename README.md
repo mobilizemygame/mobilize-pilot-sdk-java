@@ -46,6 +46,8 @@ The basic implementation will ensure to track the minimum possible amount of eve
 ```java
 @Override
 protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
     String apiKey = "your-pilot-api-key";
     String secretKey = "your-pilot-secret-key";
     IQUSDK.instance().start(getApplication(), apiKey, secretKey);
