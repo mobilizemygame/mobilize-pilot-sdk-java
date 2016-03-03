@@ -20,17 +20,17 @@ class IQUIds {
     /**
      * Use array to store ids
      */
-    private String[] m_ids;
+    private volatile String[] m_ids;
 
     /**
      * Size to use for m_ids
      */
-    private static int m_count = -1;
+    private static volatile int m_count = -1;
 
     /**
      * Secure.ANDROID_ID, will be created only one time.
      */
-    private static String m_androidId = null;
+    private static volatile String m_androidId = null;
 
     //
     // CONSTRUCTORS

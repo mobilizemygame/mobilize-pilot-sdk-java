@@ -78,22 +78,22 @@ class IQUNetwork {
     /**
      * The service url to use
      */
-    private String m_serviceUrl;
+    private final String m_serviceUrl;
 
     /**
      * The API key
      */
-    private String m_apiKey;
+    private final String m_apiKey;
 
     /**
      * The secret key (used to generate HMAC hash with)
      */
-    private String m_secretKey;
+    private final String m_secretKey;
 
     /**
      * When true stop sending.
      */
-    private boolean m_cancel;
+    private volatile boolean m_cancel;
 
     //
     // PROTECTED METHODS

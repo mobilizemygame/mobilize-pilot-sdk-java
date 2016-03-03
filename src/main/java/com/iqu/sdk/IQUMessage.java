@@ -20,27 +20,27 @@ class IQUMessage {
     /**
      * See property definition.
      */
-    private IQUMessage m_next;
+    private volatile IQUMessage m_next;
 
     /**
      * The event (as JSON string)
      */
-    private String m_event;
+    private volatile String m_event;
 
     /**
      * The event type.
      */
-    private String m_eventType;
+    private volatile String m_eventType;
 
     /**
      * The ids.
      */
-    private IQUIds m_ids;
+    private volatile IQUIds m_ids;
 
     /**
      * Queue message is currently in.
      */
-    private IQUMessageQueue m_queue;
+    private volatile IQUMessageQueue m_queue;
 
     //
     // PROTECTED CONSTRUCTOR
