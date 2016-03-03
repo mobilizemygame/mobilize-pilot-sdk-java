@@ -7,6 +7,7 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
@@ -147,7 +148,7 @@ public class IQUSDK {
   /**
    * SDK version.
    */
-  public final static String SDK_VERSION = "1.0.3";
+  public final static String SDK_VERSION = "1.0.4";
 
   //
   // PROTECTED CONSTS
@@ -208,122 +209,122 @@ public class IQUSDK {
   /**
    * See property definition.
    */
-  private static IQUSDK m_instance;
+  private volatile static IQUSDK m_instance;
 
   /**
    * See property definition.
    */
-  private boolean m_initialized;
+  private volatile boolean m_initialized;
 
   /**
    * See property definition.
    */
-  private boolean m_logEnabled;
+  private volatile boolean m_logEnabled;
 
   /**
    * See property definition.
    */
-  private String m_log;
+  private volatile String m_log;
 
   /**
    * See property definition.
    */
-  private IQUTestMode m_testMode;
+  private volatile IQUTestMode m_testMode;
 
   /**
    * See property definition.
    */
-  private boolean m_serverAvailable;
+  private volatile boolean m_serverAvailable;
 
   /**
    * See property definition.
    */
-  private long m_sendTimeout;
+  private volatile long m_sendTimeout;
 
   /**
    * See property definition.
    */
-  private long m_updateInterval;
+  private volatile long m_updateInterval;
 
   /**
    * See property definition.
    */
-  private boolean m_analyticsEnabled;
+  private volatile boolean m_analyticsEnabled;
 
   /**
    * See property definition.
    */
-  private long m_checkServerInterval;
+  private volatile long m_checkServerInterval;
 
   /**
    * See property definition.
    */
-  private boolean m_payable;
+  private volatile boolean m_payable;
 
   /**
    * Contains the various ids
    */
-  private IQUIds m_ids;
+  private volatile IQUIds m_ids;
 
   /**
    * The paused state of the application
    */
-  private boolean m_updateThreadPaused;
+  private volatile boolean m_updateThreadPaused;
 
   /**
    * When true doUpdate call is busy.
    */
-  private boolean m_updateThreadBusy;
+  private volatile boolean m_updateThreadBusy;
 
   /**
    * Thread used to call update()
    */
-  private Thread m_updateThread;
+  private volatile Thread m_updateThread;
 
   /**
    * While this value is true the thread keeps running in an infinite loop
    */
-  private boolean m_updateThreadRunning;
+  private volatile boolean m_updateThreadRunning;
 
   /**
    * Network part of IQU SDK.
    */
-  private IQUNetwork m_network;
+  private volatile IQUNetwork m_network;
 
   /**
    * Local storage part of IQU SDK.
    */
-  private IQULocalStorage m_localStorage;
+  private volatile IQULocalStorage m_localStorage;
 
   /**
    * Contains the application using the SDK.
    */
-  private Application m_application;
+  private volatile Application m_application;
 
   /**
    * Contains messages that are pending to be sent.
    */
-  private IQUMessageQueue m_pendingMessages;
+  private volatile IQUMessageQueue m_pendingMessages;
 
   /**
    * Contains messages currently being sent.
    */
-  private IQUMessageQueue m_sendingMessages;
+  private volatile IQUMessageQueue m_sendingMessages;
 
   /**
    * Time before a new server check is allowed.
    */
-  private long m_checkServerTime;
+  private volatile long m_checkServerTime;
 
   /**
    * Time of last heartbeat message.
    */
-  private long m_heartbeatTime;
+  private volatile long m_heartbeatTime;
 
   /**
    * True if update call has never been called before.
    */
-  private boolean m_firstUpdateCall;
+  private volatile boolean m_firstUpdateCall;
 
   /**
    * Formats date and time values for use by the server.
@@ -432,8 +433,10 @@ public class IQUSDK {
    * @param aPayable
    *   Initial payable value
    */
-  public synchronized void start(Application anApplication, String anApiKey, String aSecretKey,
-                                 boolean aPayable) {
+  public synchronized void start(
+    Application anApplication, String anApiKey, String aSecretKey,
+    boolean aPayable
+  ) {
     this.initialize(anApplication, anApiKey, aSecretKey, aPayable);
   }
 
@@ -450,8 +453,10 @@ public class IQUSDK {
    * @param aCustomId
    *   A custom id that the SDK should use.
    */
-  public synchronized void start(Application anApplication, String anApiKey, String aSecretKey,
-                                 String aCustomId) {
+  public synchronized void start(
+    Application anApplication, String anApiKey, String aSecretKey,
+    String aCustomId
+  ) {
     this.start(anApplication, anApiKey, aSecretKey, aCustomId, true);
   }
 
@@ -474,8 +479,10 @@ public class IQUSDK {
    * @param aPayable
    *   Initial payable value
    */
-  public synchronized void start(Application anApplication, String anApiKey, String aSecretKey,
-                                 String aCustomId, boolean aPayable) {
+  public synchronized void start(
+    Application anApplication, String anApiKey, String aSecretKey,
+    String aCustomId, boolean aPayable
+  ) {
     this.start(anApplication, anApiKey, aSecretKey, aPayable);
     this.setCustomId(aCustomId);
   }
@@ -509,9 +516,7 @@ public class IQUSDK {
    * Call this method from Activity's onResume; it resumes the update thread.
    */
   public void resume() {
-    synchronized(this.m_updateThreadVariableSemaphore) {
-      this.m_updateThreadPaused = false;
-    }
+    this.resumeUpdateThread();
   }
 
   /**
@@ -690,8 +695,10 @@ public class IQUSDK {
    * @param aReward
    *   Name of reward or null if there no such value
    */
-  public void trackRevenue(float anAmount, String aCurrency, float aVirtualCurrencyAmount,
-                           String aReward) {
+  public void trackRevenue(
+    float anAmount, String aCurrency, float aVirtualCurrencyAmount,
+    String aReward
+  ) {
     // exit if analytics are disabled
     if (!this.getAnalyticsEnabled()) {
       return;
@@ -726,7 +733,9 @@ public class IQUSDK {
    * @param aVirtualCurrencyAmount
    *   Amount of virtual currency rewarded with this purchase
    */
-  public void trackRevenue(float anAmount, String aCurrency, float aVirtualCurrencyAmount) {
+  public void trackRevenue(
+    float anAmount, String aCurrency, float aVirtualCurrencyAmount
+  ) {
     this.trackRevenue(anAmount, aCurrency, aVirtualCurrencyAmount, null);
   }
 
@@ -852,8 +861,10 @@ public class IQUSDK {
    * @param aSubSubId
    *   Marketing partner sub sub id or null if there is none.
    */
-  public void trackMarketing(String aPartner, String aCampaign, String anAd, String aSubId,
-                             String aSubSubId) {
+  public void trackMarketing(
+    String aPartner, String aCampaign, String anAd, String aSubId,
+    String aSubSubId
+  ) {
     // exit if analytics are disabled
     if (!this.getAnalyticsEnabled()) {
       return;
@@ -1261,6 +1272,7 @@ public class IQUSDK {
     synchronized (this.m_logSemaphore) {
       if (DEBUG) {
         if (this.m_logEnabled) {
+          Log.d("IQUSDK", aMessage);
           this.m_log = this.m_log + aMessage + "\n";
         }
       }
@@ -1284,8 +1296,10 @@ public class IQUSDK {
    * @param aPayable
    *   Initial payable value.
    */
-  private void initialize(Application anApplication, String anApiKey, String aSecretKey,
-                          boolean aPayable) {
+  private void initialize(
+    Application anApplication, String anApiKey, String aSecretKey,
+    boolean aPayable
+  ) {
     // exit if already initialized
     if (this.getInitialized()) {
       if (DEBUG) {
@@ -1296,7 +1310,9 @@ public class IQUSDK {
     // store reference to application
     this.m_application = anApplication;
     // create local storage
-    this.m_localStorage = new IQULocalStorage(anApplication.getSharedPreferences("IQU_SDK", 0));
+    this.m_localStorage = new IQULocalStorage(
+      anApplication.getSharedPreferences("IQU_SDK", 0)
+    );
     // create network
     this.m_network = new IQUNetwork(anApiKey, aSecretKey);
     // create message queues
@@ -1334,7 +1350,10 @@ public class IQUSDK {
     // load stored messages and prepend them to pending messages.
     this.loadMessages();
     // add platform message (if none exists) and analytics is allowed
-    if (!this.messagesHasEventType(EVENT_PLATFORM) && this.getAnalyticsEnabled()) {
+    if (
+      !this.messagesHasEventType(EVENT_PLATFORM) &&
+      this.getAnalyticsEnabled()
+      ) {
       this.trackPlatform();
     }
   }
@@ -1469,9 +1488,15 @@ public class IQUSDK {
       @SuppressWarnings("unchecked")
       Method isLimitAdTrackingEnabledMethod = adInfoClass
         .getDeclaredMethod("isLimitAdTrackingEnabled");
-      this.setId(IQUIdType.ANDROID_ADVERTISING, getIdMethod.invoke(adInfo).toString());
-      this.setAnalyticsEnabled(!(Boolean) isLimitAdTrackingEnabledMethod.invoke(adInfo));
-      this.setId(IQUIdType.ANDROID_AD_TRACKING, this.getAnalyticsEnabled() ? "1" : "0");
+      this.setId(
+        IQUIdType.ANDROID_ADVERTISING, getIdMethod.invoke(adInfo).toString()
+      );
+      this.setAnalyticsEnabled(
+        !(Boolean) isLimitAdTrackingEnabledMethod.invoke(adInfo)
+      );
+      this.setId(
+        IQUIdType.ANDROID_AD_TRACKING, this.getAnalyticsEnabled() ? "1" : "0"
+      );
     }
     catch (Exception e) {
       if (IQUSDK.DEBUG) {
@@ -1532,7 +1557,7 @@ public class IQUSDK {
    */
   private void pauseUpdateThread() {
     // application is paused now (any call to update will return immediately)
-    synchronized(IQUSDK.this.m_updateThreadVariableSemaphore) {
+    synchronized (IQUSDK.this.m_updateThreadVariableSemaphore) {
       this.m_updateThreadPaused = true;
     }
     // cancel any IO being executed
@@ -1541,6 +1566,23 @@ public class IQUSDK {
     }
     // wait for update thread to finish current update call
     this.waitForUpdateThread();
+    // debug message
+    if (IQUSDK.DEBUG) {
+      IQUSDK.this.addLog("[Thread] update thread paused");
+    }
+  }
+
+  /**
+   * Resumes the update thread.
+   */
+  private void resumeUpdateThread() {
+    synchronized (this.m_updateThreadVariableSemaphore) {
+      this.m_updateThreadPaused = false;
+    }
+    // debug message
+    if (IQUSDK.DEBUG) {
+      IQUSDK.this.addLog("[Thread] update thread resumed");
+    }
   }
 
   /**
@@ -1823,11 +1865,14 @@ public class IQUSDK {
       TelephonyManager manager = (TelephonyManager) this.m_application
         .getSystemService(Context.TELEPHONY_SERVICE);
       if (manager != null) {
-        this.putField(event, "device_carrier", manager.getNetworkOperatorName());
+        this.putField(
+          event, "device_carrier", manager.getNetworkOperatorName()
+        );
       }
       this.putField(event, "os_name", "android");
       this.putField(event, "os_version", Build.VERSION.RELEASE);
-      int layout = this.m_application.getResources().getConfiguration().screenLayout;
+      int layout =
+        this.m_application.getResources().getConfiguration().screenLayout;
       switch (layout & Configuration.SCREENLAYOUT_SIZE_MASK) {
         case Configuration.SCREENLAYOUT_SIZE_LARGE:
           event.put("screen_size", "large");
@@ -1879,7 +1924,9 @@ public class IQUSDK {
    * @throws JSONException
    *   if an error occurs storing the value
    */
-  private void putField(JSONObject anObject, String aName, String aValue) throws JSONException {
+  private void putField(
+    JSONObject anObject, String aName, String aValue
+  ) throws JSONException {
     if (aValue == null) {
       return;
     }

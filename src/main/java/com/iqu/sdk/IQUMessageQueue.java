@@ -35,27 +35,27 @@ class IQUMessageQueue {
     /**
      * Points to first message in chain.
      */
-    private IQUMessage m_first;
+    private volatile IQUMessage m_first;
 
     /**
      * Points to last message in chain.
      */
-    private IQUMessage m_last;
+    private volatile IQUMessage m_last;
 
     /**
      * Cached JSON string.
      */
-    private String m_cachedJSONString;
+    private volatile String m_cachedJSONString;
 
     /**
      * When true the JSON string should be recreated.
      */
-    private boolean m_dirtyJSON;
+    private volatile boolean m_dirtyJSON;
 
     /**
      * When true the queue should save itself to persistent storage.
      */
-    private boolean m_dirtyStored;
+    private volatile boolean m_dirtyStored;
 
     //
     // CONSTRUCTOR

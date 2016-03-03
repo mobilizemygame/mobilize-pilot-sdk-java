@@ -14,12 +14,12 @@ class IQULocalStorage {
     /**
      * Local storage implementation for Android.
      */
-    private SharedPreferences m_preferences = null;
+    private volatile SharedPreferences m_preferences = null;
     
     /**
      * Shortcut to editor, used to set values.
      */
-    private SharedPreferences.Editor m_editor = null;
+    private volatile SharedPreferences.Editor m_editor = null;
     
     //
     // PROTECTED METHODS
